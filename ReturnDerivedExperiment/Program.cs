@@ -7,8 +7,8 @@ internal class Program
 {
     static void Main(string[] args)
     {
-        Son s = new("son","1 meter");
-        Daughter d = new("dgtr","blonde");
+        Son s = new("son", "1 meter");
+        Daughter d = new("dgtr", "blonde");
         WriteLine(s.RequiresPreProcessing());
         WriteLine(d.RequiresPreProcessing());
 
@@ -32,23 +32,27 @@ internal class Program
 
 //Will work with abstract record
 
-public abstract record BaseRecord<T> (string LastName) where T : BaseRecord<T>
+//You need the where to return T in PreProcess, which looks only meaningful if you want it public and default to (T)this
+//otherwise return BaseRecordOf<T>, defaulting to this and polimorphysm will do the magic
+//It also depends if you need to override something to use propertis of the derived
+//Overall, putting the where seems a better option
+public abstract record BaseRecordOf<T>(string LastName) where T : BaseRecordOf<T>
 {
-    protected virtual BaseRecord<T> PreProcess()=>this;
+    protected virtual T PreProcess() => (T)this;
 
-    public string RequiresPreProcessing() 
+    public string RequiresPreProcessing()
         => PreProcess().DoSomething();
 
-    private string DoSomething() 
+    public string DoSomething()
         => string.Join(", ", GetType().GetProperties().Select(p => $"{p.Name}: {p.GetValue(this)}"));
 }
 
-public record Son (string LastName, string Height): BaseRecord<Son> (LastName)
+public record Son(string LastName, string Height) : BaseRecordOf<Son>(LastName)
 {
-    protected override Son PreProcess() => new (LastName.ToUpper(), Height);
+    protected override Son PreProcess() => new(LastName.ToUpper(), Height);
 }
 
-public record Daughter(string LastName, string Color) : BaseRecord<Daughter>(LastName);
+public record Daughter(string LastName, string Color) : BaseRecordOf<Daughter>(LastName);
 
 
 //Will not work with record and interface
